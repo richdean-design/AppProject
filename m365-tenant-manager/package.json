@@ -1,0 +1,26 @@
+{
+  "name": "m365-tenant-manager",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview"
+  },
+  "devDependencies": {
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "@types/react-router-dom": "^5.3.3",
+    "typescript": "~5.9.3",
+    "vite": "^7.3.1"
+  },
+  "dependencies": {
+    "@azure/msal-browser": "^5.2.0",
+    "@azure/msal-react": "^5.0.4",
+    "@microsoft/microsoft-graph-client": "^3.0.7",
+    "lucide-react": "^0.575.0",
+    "react-router-dom": "^7.13.0",
+    "recharts": "^3.7.0"
+  }
+}
