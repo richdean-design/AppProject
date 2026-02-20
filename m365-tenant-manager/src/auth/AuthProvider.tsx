@@ -1,50 +1,48 @@
 import { MsalProvider, useMsal, useIsAuthenticated } from '@azure/msal-react';
-import { PublicClientApplication, InteractionStatus, EventType } from '@azure/msal-browser';
+import { PublicClientApplication, InteractionStatus } from '@azure/msal-browser';
 import { msalConfig, loginRequest } from './msalConfig';
 import { initGraphClient } from '../services/graphService';
 import { ReactNode, useEffect, useState } from 'react';
 
 const msalInstance = new PublicClientApplication(msalConfig);
 
-// MSAL v5 requires explicit initialization before any auth calls
-const msalInitPromise = msalInstance.initialize().then(() => {
-  // Handle redirect response after returning from Microsoft login
-  return msalInstance.handleRedirectPromise();
-});
+/**
+ * Initialize MSAL before React renders.
+ * Must be awaited in main.tsx before calling createRoot.
+ */
+export async function initializeMsal() {
+  console.log('[Auth] MSAL clientId:', import.meta.env.VITE_MSAL_CLIENT_ID ? 'SET' : 'NOT SET');
+  console.log('[Auth] MSAL tenantId:', import.meta.env.VITE_MSAL_TENANT_ID ? 'SET' : 'NOT SET');
+  console.log('[Auth] Initializing MSAL...');
+  await msalInstance.initialize();
+  console.log('[Auth] MSAL initialized successfully');
+}
 
 function AuthGate({ children }: { children: ReactNode }) {
   const { instance, inProgress } = useMsal();
   const isAuthenticated = useIsAuthenticated();
   const [isReady, setIsReady] = useState(false);
-  const [msalInitialized, setMsalInitialized] = useState(false);
-
-  // Wait for MSAL to finish initializing
-  useEffect(() => {
-    msalInitPromise
-      .then(() => setMsalInitialized(true))
-      .catch((err) => {
-        console.error('MSAL init error:', err);
-        setMsalInitialized(true); // still allow demo mode
-      });
-  }, []);
 
   useEffect(() => {
-    if (!msalInitialized) return;
-
+    console.log('[Auth] AuthGate effect:', { inProgress, isAuthenticated });
     if (inProgress === InteractionStatus.None && !isAuthenticated) {
       // Check if MSAL is configured
       if (!import.meta.env.VITE_MSAL_CLIENT_ID) {
+        console.log('[Auth] No client ID - running in demo mode');
         // No client ID configured - run in demo mode
         setIsReady(true);
         return;
       }
-      instance.loginRedirect(loginRequest).catch(console.error);
+      console.log('[Auth] Starting loginRedirect...');
+      instance.loginRedirect(loginRequest).catch((err) => {
+        console.error('[Auth] loginRedirect failed:', err);
+      });
     } else if (isAuthenticated) {
       // Initialize Graph client with the authenticated MSAL instance
       initGraphClient(instance as unknown as PublicClientApplication);
       setIsReady(true);
     }
-  }, [instance, inProgress, isAuthenticated, msalInitialized]);
+  }, [instance, inProgress, isAuthenticated]);
 
   if (!import.meta.env.VITE_MSAL_CLIENT_ID) {
     // Demo mode - no auth configured

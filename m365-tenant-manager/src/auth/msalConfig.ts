@@ -21,8 +21,12 @@ export const msalConfig: Configuration = {
           case LogLevel.Warning:
             console.warn(message);
             break;
+          case LogLevel.Info:
+            console.info(message);
+            break;
         }
       },
+      logLevel: LogLevel.Info,
     },
   },
 };
