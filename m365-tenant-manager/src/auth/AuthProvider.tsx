@@ -11,11 +11,11 @@ const msalInstance = new PublicClientApplication(msalConfig);
  * Must be awaited in main.tsx before calling createRoot.
  */
 export async function initializeMsal() {
-  console.log('[Auth] MSAL clientId:', import.meta.env.VITE_MSAL_CLIENT_ID ? 'SET' : 'NOT SET');
-  console.log('[Auth] MSAL tenantId:', import.meta.env.VITE_MSAL_TENANT_ID ? 'SET' : 'NOT SET');
-  console.log('[Auth] Initializing MSAL...');
+  console.warn('[Auth] MSAL clientId:', import.meta.env.VITE_MSAL_CLIENT_ID || 'EMPTY');
+  console.warn('[Auth] MSAL tenantId:', import.meta.env.VITE_MSAL_TENANT_ID || 'EMPTY');
+  console.warn('[Auth] Initializing MSAL...');
   await msalInstance.initialize();
-  console.log('[Auth] MSAL initialized successfully');
+  console.warn('[Auth] MSAL initialized successfully');
 }
 
 function AuthGate({ children }: { children: ReactNode }) {
@@ -24,16 +24,16 @@ function AuthGate({ children }: { children: ReactNode }) {
   const [isReady, setIsReady] = useState(false);
 
   useEffect(() => {
-    console.log('[Auth] AuthGate effect:', { inProgress, isAuthenticated });
+    console.warn('[Auth] AuthGate effect:', { inProgress, isAuthenticated });
     if (inProgress === InteractionStatus.None && !isAuthenticated) {
       // Check if MSAL is configured
       if (!import.meta.env.VITE_MSAL_CLIENT_ID) {
-        console.log('[Auth] No client ID - running in demo mode');
+        console.warn('[Auth] No client ID - running in DEMO MODE');
         // No client ID configured - run in demo mode
         setIsReady(true);
         return;
       }
-      console.log('[Auth] Starting loginRedirect...');
+      console.warn('[Auth] Starting loginRedirect...');
       instance.loginRedirect(loginRequest).catch((err) => {
         console.error('[Auth] loginRedirect failed:', err);
       });
