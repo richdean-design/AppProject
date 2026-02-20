@@ -1,17 +1,36 @@
 import { MsalProvider, useMsal, useIsAuthenticated } from '@azure/msal-react';
-import { PublicClientApplication, InteractionStatus } from '@azure/msal-browser';
+import { PublicClientApplication, InteractionStatus, EventType } from '@azure/msal-browser';
 import { msalConfig, loginRequest } from './msalConfig';
 import { initGraphClient } from '../services/graphService';
 import { ReactNode, useEffect, useState } from 'react';
 
 const msalInstance = new PublicClientApplication(msalConfig);
 
+// MSAL v5 requires explicit initialization before any auth calls
+const msalInitPromise = msalInstance.initialize().then(() => {
+  // Handle redirect response after returning from Microsoft login
+  return msalInstance.handleRedirectPromise();
+});
+
 function AuthGate({ children }: { children: ReactNode }) {
   const { instance, inProgress } = useMsal();
   const isAuthenticated = useIsAuthenticated();
   const [isReady, setIsReady] = useState(false);
+  const [msalInitialized, setMsalInitialized] = useState(false);
+
+  // Wait for MSAL to finish initializing
+  useEffect(() => {
+    msalInitPromise
+      .then(() => setMsalInitialized(true))
+      .catch((err) => {
+        console.error('MSAL init error:', err);
+        setMsalInitialized(true); // still allow demo mode
+      });
+  }, []);
 
   useEffect(() => {
+    if (!msalInitialized) return;
+
     if (inProgress === InteractionStatus.None && !isAuthenticated) {
       // Check if MSAL is configured
       if (!import.meta.env.VITE_MSAL_CLIENT_ID) {
@@ -25,7 +44,7 @@ function AuthGate({ children }: { children: ReactNode }) {
       initGraphClient(instance as unknown as PublicClientApplication);
       setIsReady(true);
     }
-  }, [instance, inProgress, isAuthenticated]);
+  }, [instance, inProgress, isAuthenticated, msalInitialized]);
 
   if (!import.meta.env.VITE_MSAL_CLIENT_ID) {
     // Demo mode - no auth configured
