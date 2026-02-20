@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { LayoutGrid, Shield, Cloud, ShieldCheck, Bell, Settings, PlusCircle, Check } from 'lucide-react';
 import { UsersKPI, GroupsKPI, DevicesKPI, AppsKPI } from './KPICard';
 import { SecureScoreCard, ComplianceCard, BackupCoverageCard, UnifiedAlertsCard } from './HealthCards';
@@ -10,6 +10,13 @@ import { UpgradeTracker } from './UpgradeTracker';
 import { CloudBackup } from './CloudBackup';
 import { AIOpportunities } from './AIOpportunities';
 import {
+  fetchUsers,
+  fetchGroups,
+  fetchDevices,
+  fetchApps,
+  fetchSecureScore,
+  fetchAlerts,
+  fetchDirectoryRoles,
   getDemoUserStats,
   getDemoGroupStats,
   getDemoDeviceStats,
@@ -21,7 +28,7 @@ import {
   getDemoUpgradeTenants,
   getDemoOpportunities,
 } from '../../services/graphService';
-import type { DashboardView } from '../../types';
+import type { DashboardView, UserStats, GroupStats, DeviceStats, AppStats, SecureScoreData, AlertItem, PrivilegedRole } from '../../types';
 
 const viewButtons: { view: DashboardView; label: string; icon: React.ReactNode }[] = [
   { view: 'overview', label: 'Overview', icon: <LayoutGrid size={14} /> },
@@ -34,17 +41,42 @@ const viewButtons: { view: DashboardView; label: string; icon: React.ReactNode }
 export function DashboardPage() {
   const [activeView, setActiveView] = useState<DashboardView>('overview');
 
-  // Use demo data (will switch to live data when MSAL is configured)
-  const userStats = getDemoUserStats();
-  const groupStats = getDemoGroupStats();
-  const deviceStats = getDemoDeviceStats();
-  const appStats = getDemoAppStats();
-  const secureScore = getDemoSecureScore();
-  const alerts = getDemoAlerts();
-  const roles = getDemoRoles();
-  const backups = getDemoBackupData();
-  const upgradeTenants = getDemoUpgradeTenants();
-  const opportunities = getDemoOpportunities();
+  // State for live data (initialized with demo data as fallback)
+  const [userStats, setUserStats] = useState<UserStats>(getDemoUserStats());
+  const [groupStats, setGroupStats] = useState<GroupStats>(getDemoGroupStats());
+  const [deviceStats, setDeviceStats] = useState<DeviceStats>(getDemoDeviceStats());
+  const [appStats, setAppStats] = useState<AppStats>(getDemoAppStats());
+  const [secureScore, setSecureScore] = useState<SecureScoreData>(getDemoSecureScore());
+  const [alerts, setAlerts] = useState<AlertItem[]>(getDemoAlerts());
+  const [roles, setRoles] = useState<PrivilegedRole[]>(getDemoRoles());
+  const [backups] = useState(getDemoBackupData());
+  const [upgradeTenants] = useState(getDemoUpgradeTenants());
+  const [opportunities] = useState(getDemoOpportunities());
+  const [lastUpdated, setLastUpdated] = useState('Loading...');
+
+  // Fetch live data from Graph API (falls back to demo data automatically)
+  useEffect(() => {
+    async function loadData() {
+      const [u, g, d, a, s, al, r] = await Promise.all([
+        fetchUsers(),
+        fetchGroups(),
+        fetchDevices(),
+        fetchApps(),
+        fetchSecureScore(),
+        fetchAlerts(),
+        fetchDirectoryRoles(),
+      ]);
+      setUserStats(u);
+      setGroupStats(g);
+      setDeviceStats(d);
+      setAppStats(a);
+      setSecureScore(s);
+      setAlerts(al);
+      setRoles(r);
+      setLastUpdated(`Just now`);
+    }
+    loadData();
+  }, []);
 
   return (
     <>
@@ -79,7 +111,7 @@ export function DashboardPage() {
         </div>
         <div className="last-updated">
           <Check size={14} />
-          Last updated: 2 minutes ago
+          Last updated: {lastUpdated}
         </div>
       </div>
 

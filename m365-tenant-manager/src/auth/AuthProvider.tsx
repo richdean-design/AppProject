@@ -1,6 +1,7 @@
 import { MsalProvider, useMsal, useIsAuthenticated } from '@azure/msal-react';
 import { PublicClientApplication, InteractionStatus } from '@azure/msal-browser';
 import { msalConfig, loginRequest } from './msalConfig';
+import { initGraphClient } from '../services/graphService';
 import { ReactNode, useEffect, useState } from 'react';
 
 const msalInstance = new PublicClientApplication(msalConfig);
@@ -20,6 +21,8 @@ function AuthGate({ children }: { children: ReactNode }) {
       }
       instance.loginRedirect(loginRequest).catch(console.error);
     } else if (isAuthenticated) {
+      // Initialize Graph client with the authenticated MSAL instance
+      initGraphClient(instance as unknown as PublicClientApplication);
       setIsReady(true);
     }
   }, [instance, inProgress, isAuthenticated]);
